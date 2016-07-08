@@ -80,6 +80,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Listener
                     IAgent agent = context.GetService<IAgent>();
                     using (agent.TokenSource = new CancellationTokenSource())
                     {
+                        agent.TokenSource.CancelAfter(100000);
                         try
                         {
                             rc = await agent.ExecuteCommand(command);
@@ -97,7 +98,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Listener
                     rc = Constants.Agent.ReturnCode.RetryableError;
                 }
 
-                return rc;
+                return  Constants.Agent.ReturnCode.AgentUpdating;
             }
         }
     }

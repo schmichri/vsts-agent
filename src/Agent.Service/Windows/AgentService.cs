@@ -10,6 +10,14 @@ using System.Threading.Tasks;
 
 namespace AgentService
 {
+    internal class ServiceNeedRestartException : Exception
+    {
+        public ServiceNeedRestartException()
+            : base("RestartServiceHost")
+        { }
+    }
+
+
     public partial class AgentService : ServiceBase
     {
         public const string EventSourceName = "VstsAgentService";
@@ -75,7 +83,8 @@ namespace AgentService
                                         break;
                                     case 3:
                                         WriteInfo(Resource.AgentUpdateInProcess);
-                                        break;
+                                        Thread.Sleep(timeBetweenRetries);
+                                        throw new ServiceNeedRestartException();
                                     default:
                                         WriteInfo(Resource.AgentExitWithUndefinedReturnCode);
                                         break;
@@ -102,7 +111,7 @@ namespace AgentService
                                 }
                             }
                         }
-                        catch (Exception exception)
+                        catch (Exception exception) when (!(exception is ServiceNeedRestartException))
                         {
                             WriteException(exception);
                             ExitCode = 99;
