@@ -197,7 +197,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Listener
             return latestAgentDirectory;
         }
 
-        private string GenerateBatchScript(string latestAgent, bool restartInteractiveAgent)
+        public string GenerateBatchScript(string latestAgent, bool restartInteractiveAgent)
         {
             int processId = Process.GetCurrentProcess().Id;
             string updateLog = Path.Combine(IOUtil.GetDiagPath(), $"SelfUpdate-{DateTime.UtcNow.ToString("yyyyMMdd-HHmmss")}.log");
@@ -284,7 +284,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Listener
             return updateScript;
         }
 
-        private string GenerateShellScript(string latestAgent, bool restartInteractiveAgent)
+        public string GenerateShellScript(string latestAgent, bool restartInteractiveAgent)
         {
             int processId = Process.GetCurrentProcess().Id;
             string updateLog = Path.Combine(IOUtil.GetDiagPath(), $"SelfUpdate-{DateTime.UtcNow.ToString("yyyyMMdd-HHmmss")}.log");
