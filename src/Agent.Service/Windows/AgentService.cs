@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -7,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.ServiceProcess;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace AgentService
 {
@@ -75,7 +77,43 @@ namespace AgentService
                                         break;
                                     case 3:
                                         WriteInfo(Resource.AgentUpdateInProcess);
-                                        break;
+                                        // sleep 10 seconds wait for upgrade script to finish
+                                        Thread.Sleep(10000);
+                                    // looking update result record under _diag folder (the log file itself will indicate the result)
+                                    // SelfUpdate-20160711-160300-Succeed.log or SelfUpdate-20160711-160300-Fail.log
+                                    // Find the latest upgrade log, make sure the log is created less than 15 seconds.
+                                    // When upgrade succeed, Exit(int.max), this will trigger SCM to recovery the service by restart it, 
+                                    // in this way we can upgrade the ServiceHost as well, since SCM cache the ServiceHost in memory, we need update the servicehost as well.
+                                    DirectoryInfo dirInfo = new DirectoryInfo(GetDiagnosticFolderPath());
+                                    FileInfo[] updateLogs = dirInfo.GetFiles("SelfUpdate_*_*.log") ?? new FileInfo[0];
+                                    if (updateLogs.Length == 0)
+                                    {
+                                        // totally wrong, we are not even get a update log.
+                                    }
+                                    else
+                                    {
+                                        String latestLogFile;
+                                        DateTime latestLogTimestamp = DateTime.MinValue;
+                                        foreach (var logFile in updateLogs)
+                                        {
+                                            int timestampStartIndex = logFile.Name.IndexOf("_") + 1;
+                                            int timestampEndIndex = logFile.Name.LastIndexOf("_") - 1;
+                                            string timestamp = logFile.Name.Substring(timestampStartIndex, timestampEndIndex - timestampStartIndex + 1);
+                                            DateTime updateTime;
+                                            if (DateTime.TryParseExact(timestamp, "yyyyMMdd-HHmmss", null, DateTimeStyles.None, out updateTime) &&
+                                                updateTime > latestLogTimestamp)
+                                            {
+                                                latestLogFile = logFile.Name;
+                                                latestLogTimestamp = updateTime;
+                                            }
+                                        }
+
+                                        if (DateTime.UtcNow - latestLogTimestamp <= TimeSpan.FromSeconds(30))
+                                        {
+
+                                        }
+                                    }
+                                    break;
                                     default:
                                         WriteInfo(Resource.AgentExitWithUndefinedReturnCode);
                                         break;
