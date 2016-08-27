@@ -285,6 +285,8 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
 
         public string[] Platforms { get; set; }
 
+        public Dictionary<string, string> Conditions { get; set; }
+
         [JsonIgnore]
         public abstract int Priority { get; }
 
@@ -304,6 +306,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
         public HandlerData()
         {
             Inputs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            Conditions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         }
 
         public bool PreferredOnCurrentPlatform()
@@ -535,6 +538,75 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
             set
             {
                 SetInput(nameof(WorkingDirectory), value);
+            }
+        }
+    }
+
+    public interface IHandlerConditionEvaluator : IExtension, IAgentService
+    {
+        string Name { get; }
+        bool IsConditionMatch(string conditionData);
+    }
+
+    public class HandlerPlatformEvaluator : AgentService, IHandlerConditionEvaluator
+    {
+        public Type ExtensionType => typeof(IHandlerConditionEvaluator);
+
+        public string Name => "Platforms";
+
+#if OS_WINDOWS
+        private string _platform = "windows";
+#elif OS_LINUX
+        private string _platform = "linux";
+#elif OS_OSX
+        private string _platform = "darwin";
+#endif
+
+        public bool IsConditionMatch(string conditionData)
+        {
+            string[] requiredPlatforms = JsonUtility.FromString<string[]>(conditionData);
+            return requiredPlatforms.Contains(_platform);
+        }
+    }
+
+    public class HandlerFeatureEvaluator : AgentService, IHandlerConditionEvaluator
+    {
+        public Type ExtensionType => typeof(IHandlerConditionEvaluator);
+
+        public string Name => "Features";
+
+        public bool IsConditionMatch(string conditionData)
+        {
+            string[] requiredFeatures = JsonUtility.FromString<string[]>(conditionData);
+            var featureAvaliability = HostContext.GetService<IFeatureAvaliability>();
+            string[] supportedFeatures = featureAvaliability.AllSupportFeatures;
+            return requiredFeatures.Any(x => !supportedFeatures.Contains(x));
+        }
+    }
+
+    [ServiceLocator(Default = typeof(FeatureAvaliability))]
+    public interface IFeatureAvaliability : IAgentService
+    {
+        string[] AllSupportFeatures { get; }
+    }
+
+    public class FeatureAvaliability : AgentService, IFeatureAvaliability
+    {
+        private readonly List<string> _supportFeatures = new List<string>();
+
+        public override void Initialize(IHostContext hostContext)
+        {
+            base.Initialize(hostContext);
+            _supportFeatures.Add("a");
+            _supportFeatures.Add("b");
+            _supportFeatures.Add("c");
+        }
+
+        public string[] AllSupportFeatures
+        {
+            get
+            {
+                return _supportFeatures.ToArray();
             }
         }
     }
