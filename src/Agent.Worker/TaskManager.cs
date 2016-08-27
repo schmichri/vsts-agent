@@ -171,6 +171,15 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
         [JsonIgnore]
         public List<HandlerData> All => _all;
 
+        [JsonIgnore]
+        public bool SupportCondition
+        {
+            get
+            {
+                return All.Any(x => x.Conditions.Count > 0);
+            }
+        }
+
 #if !OS_WINDOWS
         [JsonIgnore]
 #endif
@@ -285,7 +294,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
 
         public string[] Platforms { get; set; }
 
-        public Dictionary<string, string> Conditions { get; set; }
+        public Dictionary<string, object> Conditions { get; set; }
 
         [JsonIgnore]
         public abstract int Priority { get; }
@@ -306,7 +315,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
         public HandlerData()
         {
             Inputs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            Conditions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            Conditions = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
         }
 
         public bool PreferredOnCurrentPlatform()
@@ -545,7 +554,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
     public interface IHandlerConditionEvaluator : IExtension, IAgentService
     {
         string Name { get; }
-        bool IsConditionMatch(string conditionData);
+        bool IsConditionMatch(object conditionData);
     }
 
     public class HandlerPlatformEvaluator : AgentService, IHandlerConditionEvaluator
@@ -562,9 +571,9 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
         private string _platform = "darwin";
 #endif
 
-        public bool IsConditionMatch(string conditionData)
+        public bool IsConditionMatch(object conditionData)
         {
-            string[] requiredPlatforms = JsonUtility.FromString<string[]>(conditionData);
+            string[] requiredPlatforms = JsonUtility.FromString<string[]>(conditionData as string);
             return requiredPlatforms.Contains(_platform);
         }
     }
@@ -575,9 +584,9 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
 
         public string Name => "Features";
 
-        public bool IsConditionMatch(string conditionData)
+        public bool IsConditionMatch(object conditionData)
         {
-            string[] requiredFeatures = JsonUtility.FromString<string[]>(conditionData);
+            string[] requiredFeatures = JsonUtility.FromString<string[]>(conditionData as string);
             var featureAvaliability = HostContext.GetService<IFeatureAvaliability>();
             string[] supportedFeatures = featureAvaliability.AllSupportFeatures;
             return requiredFeatures.Any(x => !supportedFeatures.Contains(x));
