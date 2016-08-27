@@ -64,8 +64,8 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
                     bool candidate = true;
                     foreach (var condition in execution.Conditions)
                     {
-                        Trace.Info($"Testing condition: {condition.Key}");
-                        var evaluator = evaluators.Where(e => e.Name == condition.Key).FirstOrDefault();
+                        Trace.Info($"Testing condition: {condition.Key} = {condition.Value.ToString()}");
+                        var evaluator = evaluators.Where(e => e.Name.Equals(condition.Key, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
                         Trace.Info(evaluator.GetType());
                         if (!evaluator.IsConditionMatch(condition.Value))
                         {

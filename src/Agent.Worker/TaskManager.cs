@@ -573,7 +573,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
 
         public bool IsConditionMatch(object conditionData)
         {
-            string[] requiredPlatforms = JsonUtility.FromString<string[]>(conditionData as string);
+            string[] requiredPlatforms = JsonUtility.FromString<string[]>(conditionData.ToString());
             return requiredPlatforms.Contains(_platform);
         }
     }
@@ -586,10 +586,13 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
 
         public bool IsConditionMatch(object conditionData)
         {
-            string[] requiredFeatures = JsonUtility.FromString<string[]>(conditionData as string);
+            Trace.Info(conditionData as string);
+            string[] requiredFeatures = JsonUtility.FromString<string[]>(conditionData.ToString());
+            Trace.Info(string.Join(",", requiredFeatures));
             var featureAvaliability = HostContext.GetService<IFeatureAvaliability>();
             string[] supportedFeatures = featureAvaliability.AllSupportFeatures;
-            return requiredFeatures.Any(x => !supportedFeatures.Contains(x));
+            Trace.Info(string.Join(",", supportedFeatures));
+            return !(requiredFeatures.Any(x => !supportedFeatures.Contains(x)));
         }
     }
 
