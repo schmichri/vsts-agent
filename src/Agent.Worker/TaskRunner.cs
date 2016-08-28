@@ -61,6 +61,12 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
                 foreach (var execution in definition.Data.Execution.All)
                 {
                     Trace.Info(execution.GetType());
+                    if (execution.Conditions.Count == 0)
+                    {
+                        Trace.Info($"Skip {execution.GetType().Name} which has empty conditions.");
+                        continue;
+                    }
+
                     bool candidate = true;
                     foreach (var condition in execution.Conditions)
                     {
