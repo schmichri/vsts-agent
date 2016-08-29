@@ -609,9 +609,8 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
         public override void Initialize(IHostContext hostContext)
         {
             base.Initialize(hostContext);
-            _supportFeatures.Add("a");
-            _supportFeatures.Add("b");
-            _supportFeatures.Add("c");
+            var featureScanner = hostContext.GetService<IAgentFeatureScanner>();
+            _supportFeatures.AddRange(featureScanner.GetAgentFeatures());
         }
 
         public string[] AllSupportFeatures
