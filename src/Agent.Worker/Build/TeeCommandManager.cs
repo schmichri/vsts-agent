@@ -50,6 +50,15 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Build
             throw new NotSupportedException();
         }
 
+        public void SetupProxy(string proxyUrl, string proxyUsername, string proxyPassword)
+        {
+            if (!string.IsNullOrEmpty(proxyUrl))
+            {
+                Uri proxy = UrlUtil.GetCredentialEmbeddedUrl(new Uri(proxyUrl), proxyUsername, proxyPassword);
+                AdditionalEnvironmentVariables["http_proxy"] = proxy.AbsoluteUri;
+            }
+        }
+
         public async Task ShelveAsync(string shelveset, string commentFile)
         {
             ArgUtil.NotNullOrEmpty(shelveset, nameof(shelveset));

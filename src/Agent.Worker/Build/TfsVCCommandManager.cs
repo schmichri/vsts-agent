@@ -25,6 +25,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Build
         Task GetAsync(string localPath);
         string ResolvePath(string serverPath);
         Task ScorchAsync();
+        void SetupProxy(string proxyUrl, string proxyUsername, string proxyPassword);
         Task ShelveAsync(string shelveset, string commentFile);
         Task<ITfsVCShelveset> ShelvesetsAsync(string shelveset);
         Task<ITfsVCStatus> StatusAsync(string localPath);
@@ -43,6 +44,8 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Build
 
     public abstract class TfsVCCommandManager : AgentService
     {
+        public readonly Dictionary<string, string> AdditionalEnvironmentVariables = new Dictionary<string, string>();
+
         public CancellationToken CancellationToken { protected get; set; }
 
         public ServiceEndpoint Endpoint { protected get; set; }
@@ -120,7 +123,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Build
                     workingDirectory: SourcesDirectory,
                     fileName: "tf",
                     arguments: arguments,
-                    environment: null,
+                    environment: AdditionalEnvironmentVariables,
                     requireExitCodeZero: true,
                     outputEncoding: OutputEncoding,
                     cancellationToken: CancellationToken);
@@ -185,7 +188,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Build
                         workingDirectory: SourcesDirectory,
                         fileName: "tf",
                         arguments: arguments,
-                        environment: null,
+                        environment: AdditionalEnvironmentVariables,
                         requireExitCodeZero: true,
                         outputEncoding: OutputEncoding,
                         cancellationToken: CancellationToken);
