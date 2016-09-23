@@ -307,6 +307,13 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Build
                     }
                 }
             }
+
+            // Cleanup proxy settings.
+            if (!string.IsNullOrEmpty(executionContext.Variables.Agent_ProxyUrl))
+            {
+                executionContext.Debug($"Remove proxy setting for '{tf.FilePath}' to work through proxy server '{executionContext.Variables.Agent_ProxyUrl}'.");
+                tf.CleanupProxySetting();
+            }
         }
 
         public Task PostJobCleanupAsync(IExecutionContext executionContext, ServiceEndpoint endpoint)

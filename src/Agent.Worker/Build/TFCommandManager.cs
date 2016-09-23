@@ -31,6 +31,17 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Build
 
         public string FilePath => Path.Combine(ExecutionContext.Variables.Agent_ServerOMDirectory, "tf.exe");
 
+        private string AppConfigFile => Path.Combine(ExecutionContext.Variables.Agent_ServerOMDirectory, "tf.exe.config");
+
+        private string AppConfigRestoreFile => Path.Combine(ExecutionContext.Variables.Agent_ServerOMDirectory, "tf.exe.config.restore");
+
+        public void CleanupProxySetting()
+        {
+            ArgUtil.File(AppConfigRestoreFile, "tf.exe.config.restore");
+            ExecutionContext.Debug("Restore default tf.exe.config.");
+            IOUtil.DeleteFile(AppConfigFile);
+            File.Copy(AppConfigRestoreFile, AppConfigFile);
+        }
 
         public Task EulaAsync()
         {
@@ -62,39 +73,52 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Build
 
         public void SetupProxy(string proxyUrl, string proxyUsername, string proxyPassword)
         {
+            ArgUtil.File(AppConfigFile, "tf.exe.config");
+            if (!File.Exists(AppConfigRestoreFile))
+            {
+                Trace.Info("Take snapshot of current appconfig for restore modified appconfig.");
+                File.Copy(AppConfigFile, AppConfigRestoreFile);
+            }
+            else
+            {
+                // cleanup any appconfig changes from previous build.
+                CleanupProxySetting();
+            }
+
             if (!string.IsNullOrEmpty(proxyUrl))
             {
-                string appConfigFile = Path.Combine(ExecutionContext.Variables.Agent_ServerOMDirectory, "tf.exe.config");
-                if (!File.Exists(appConfigFile))
-                {
-                    throw new FileNotFoundException(appConfigFile);
-                }
-
                 XmlDocument appConfig = new XmlDocument();
-                using (var appConfigStream = new FileStream(appConfigFile, FileMode.Open, FileAccess.Read))
+                using (var appConfigStream = new FileStream(AppConfigFile, FileMode.Open, FileAccess.Read))
                 {
                     appConfig.Load(appConfigStream);
                 }
 
+                var configuration = appConfig.SelectSingleNode("configuration");
+                ArgUtil.NotNull(configuration, "configuration");
+
                 var exist_defaultProxy = appConfig.SelectSingleNode("configuration/system.net/defaultProxy");
                 if (exist_defaultProxy == null)
                 {
+                    var system_net = appConfig.SelectSingleNode("configuration/system.net");
+                    if (system_net == null)
+                    {
+                        Trace.Verbose("Create system.net section in appconfg.");
+                        system_net = appConfig.CreateElement("system.net");
+                    }
+
+                    Trace.Verbose("Create defaultProxy section in appconfg.");
+                    var defaultProxy = appConfig.CreateElement("defaultProxy");
+                    defaultProxy.SetAttribute("useDefaultCredentials", "True");
+
+                    Trace.Verbose("Create proxy section in appconfg.");
                     var proxy = appConfig.CreateElement("proxy");
                     proxy.SetAttribute("proxyaddress", proxyUrl);
 
-                    var defaultProxy = appConfig.CreateElement("defaultProxy");
-                    defaultProxy.SetAttribute("useDefaultCredentials", "True");
                     defaultProxy.AppendChild(proxy);
-
-                    var system_net = appConfig.CreateElement("system.net");
                     system_net.AppendChild(defaultProxy);
-
-                    var configuration = appConfig.SelectSingleNode("configuration");
-                    ArgUtil.NotNull(configuration, "configuration");
-
                     configuration.AppendChild(system_net);
 
-                    using (var appConfigStream = new FileStream(appConfigFile, FileMode.Open, FileAccess.ReadWrite))
+                    using (var appConfigStream = new FileStream(AppConfigFile, FileMode.Open, FileAccess.ReadWrite))
                     {
                         appConfig.Save(appConfigStream);
                     }

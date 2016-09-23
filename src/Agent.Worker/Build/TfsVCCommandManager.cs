@@ -26,6 +26,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Build
         string ResolvePath(string serverPath);
         Task ScorchAsync();
         void SetupProxy(string proxyUrl, string proxyUsername, string proxyPassword);
+        void CleanupProxySetting();
         Task ShelveAsync(string shelveset, string commentFile);
         Task<ITfsVCShelveset> ShelvesetsAsync(string shelveset);
         Task<ITfsVCStatus> StatusAsync(string localPath);

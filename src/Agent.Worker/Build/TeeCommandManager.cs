@@ -17,6 +17,11 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Build
 
         public string FilePath => Path.Combine(IOUtil.GetExternalsPath(), Constants.Path.TeeDirectory, "tf");
 
+        public void CleanupProxySetting()
+        {
+            // no-opt for TEE.
+        }
+
         public async Task EulaAsync()
         {
             await RunCommandAsync(FormatFlags.All, "eula", "-accept");
